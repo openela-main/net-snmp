@@ -1,0 +1,38 @@
+diff -up net-snmp-5.7.2/agent/mibgroup/ip-mib/data_access/systemstats_linux.c.rhbz2134359 net-snmp-5.7.2/agent/mibgroup/ip-mib/data_access/systemstats_linux.c
+--- net-snmp-5.7.2/agent/mibgroup/ip-mib/data_access/systemstats_linux.c.rhbz2134359	2022-10-13 11:10:12.206072210 +0200
++++ net-snmp-5.7.2/agent/mibgroup/ip-mib/data_access/systemstats_linux.c	2022-10-13 11:10:40.893111569 +0200
+@@ -566,6 +566,7 @@ _systemstats_v6_load_systemstats(netsnmp
+         DEBUGMSGTL(("access:systemstats",
+                 "Failed to load Systemstats Table (linux1), cannot open %s\n",
+                 filename));
++        netsnmp_access_systemstats_entry_free(entry);
+         return 0;
+     }
+     
+diff --git a/agent/mibgroup/ucd-snmp/lmsensorsMib.c b/agent/mibgroup/ucd-snmp/lmsensorsMib.c
+index f709812fdc..ef93eeedc9 100644
+--- a/agent/mibgroup/ucd-snmp/lmsensorsMib.c
++++ b/agent/mibgroup/ucd-snmp/lmsensorsMib.c
+@@ -94,7 +94,9 @@ initialize_lmSensorsTable(const char *tableName, const oid *tableOID,
+     netsnmp_table_helper_add_indexes(table_info, ASN_INTEGER, 0);
+     table_info->min_column = COLUMN_LMSENSORS_INDEX;
+     table_info->max_column = COLUMN_LMSENSORS_VALUE;
+-    netsnmp_container_table_register( reg, table_info, container, 0 );
++    if (netsnmp_container_table_register(reg, table_info, container, 0) !=
++        SNMPERR_SUCCESS)
++        return;
+ 
+     /*
+      * If the HAL sensors module was configured as an on-demand caching
+diff -up net-snmp-5.7.2/snmplib/snmp_logging.c.rhbz2134359 net-snmp-5.7.2/snmplib/snmp_logging.c
+--- net-snmp-5.7.2/snmplib/snmp_logging.c.rhbz2134359	2022-10-13 11:11:25.599172905 +0200
++++ net-snmp-5.7.2/snmplib/snmp_logging.c	2022-10-13 11:12:26.986257126 +0200
+@@ -534,7 +534,7 @@ snmp_log_options(char *optarg, int argc,
+ char *
+ snmp_log_syslogname(const char *pstr)
+ {
+-  if (pstr)
++  if (pstr && (pstr != syslogname))
+     strlcpy (syslogname, pstr, sizeof(syslogname));
+ 
+   return syslogname;
