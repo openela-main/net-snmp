@@ -1,0 +1,92 @@
+From c6facf2f080c9e1ea803e4884dc92889ec83d990 Mon Sep 17 00:00:00 2001
+From: Drew A Roedersheimer <Drew.A.Roedersheimer@leidos.com>
+Date: Wed, 10 Oct 2018 21:42:35 -0700
+Subject: [PATCH] snmplib/keytools: Fix a memory leak
+
+Avoid that Valgrind reports the following memory leak:
+
+17,328 bytes in 361 blocks are definitely lost in loss record 696 of 704
+   at 0x4C29BE3: malloc (vg_replace_malloc.c:299)
+   by 0x52223B7: CRYPTO_malloc (in /usr/lib64/libcrypto.so.1.0.2k)
+   by 0x52DDB06: EVP_MD_CTX_create (in /usr/lib64/libcrypto.so.1.0.2k)
+   by 0x4E9885D: generate_Ku (keytools.c:186)
+   by 0x40171F: asynchronous (leaktest.c:276)
+   by 0x400FE7: main (leaktest.c:356)
+---
+ snmplib/keytools.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/snmplib/keytools.c b/snmplib/keytools.c
+index 2cf0240abf..dcdae044ac 100644
+--- a/snmplib/keytools.c
++++ b/snmplib/keytools.c
+@@ -186,11 +186,15 @@ generate_Ku(const oid * hashtype, u_int hashtype_len,
+     ctx = EVP_MD_CTX_create();
+ #else
+     ctx = malloc(sizeof(*ctx));
+-    if (!EVP_MD_CTX_init(ctx))
+-        return SNMPERR_GENERR;
++    if (!EVP_MD_CTX_init(ctx)) {
++        rval = SNMPERR_GENERR;
++        goto generate_Ku_quit;
++    }
+ #endif
+-    if (!EVP_DigestInit(ctx, hashfn))
+-        return SNMPERR_GENERR;
++    if (!EVP_DigestInit(ctx, hashfn)) {
++        rval = SNMPERR_GENERR;
++        goto generate_Ku_quit;
++    }
+ 
+ #elif NETSNMP_USE_INTERNAL_CRYPTO
+ #ifndef NETSNMP_DISABLE_MD5
+From 67726f2a74007b5b4117fe49ca1e02c86110b624 Mon Sep 17 00:00:00 2001
+From: Drew A Roedersheimer <Drew.A.Roedersheimer@leidos.com>
+Date: Tue, 9 Oct 2018 23:28:25 +0000
+Subject: [PATCH] snmplib: Fix a memory leak in scapi.c
+
+This patch avoids that Valgrind reports the following leak:
+
+==1069== 3,456 bytes in 72 blocks are definitely lost in loss record 1,568 of 1,616
+==1069==    at 0x4C29BE3: malloc (vg_replace_malloc.c:299)
+==1069==    by 0x70A63B7: CRYPTO_malloc (in /usr/lib64/libcrypto.so.1.0.2k)
+==1069==    by 0x7161B06: EVP_MD_CTX_create (in /usr/lib64/libcrypto.so.1.0.2k)
+==1069==    by 0x4EA3017: sc_hash (in /usr/lib64/libnetsnmp.so.31.0.2)
+==1069==    by 0x4EA1CD8: hash_engineID (in /usr/lib64/libnetsnmp.so.31.0.2)
+==1069==    by 0x4EA1DEC: search_enginetime_list (in /usr/lib64/libnetsnmp.so.31.0.2)
+==1069==    by 0x4EA2256: set_enginetime (in /usr/lib64/libnetsnmp.so.31.0.2)
+==1069==    by 0x4EC495E: usm_process_in_msg (in /usr/lib64/libnetsnmp.so.31.0.2)
+==1069==    by 0x4EC58CA: usm_secmod_process_in_msg (in /usr/lib64/libnetsnmp.so.31.0.2)
+==1069==    by 0x4E7B91D: snmpv3_parse (in /usr/lib64/libnetsnmp.so.31.0.2)
+==1069==    by 0x4E7C1F6: ??? (in /usr/lib64/libnetsnmp.so.31.0.2)
+==1069==    by 0x4E7CE94: ??? (in /usr/lib64/libnetsnmp.so.31.0.2)
+
+[ bvanassche: minimized diffs / edited commit message ]
+---
+ snmplib/scapi.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/snmplib/scapi.c b/snmplib/scapi.c
+index 8ad1d70d90..54310099d8 100644
+--- a/snmplib/scapi.c
++++ b/snmplib/scapi.c
+@@ -967,7 +967,8 @@ sc_hash_type(int auth_type, const u_char * buf, size_t buf_len, u_char * MAC,
+ #endif
+     if (!EVP_DigestInit(cptr, hashfn)) {
+         /* requested hash function is not available */
+-        return SNMPERR_SC_NOT_CONFIGURED;
++        rval = SNMPERR_SC_NOT_CONFIGURED;
++        goto sc_hash_type_quit;
+     }
+ 
+ /** pass the data */
+@@ -976,6 +977,8 @@ sc_hash_type(int auth_type, const u_char * buf, size_t buf_len, u_char * MAC,
+ /** do the final pass */
+     EVP_DigestFinal(cptr, MAC, &tmp_len);
+     *MAC_len = tmp_len;
++
++sc_hash_type_quit:
+ #if defined(HAVE_EVP_MD_CTX_FREE)
+     EVP_MD_CTX_free(cptr);
+ #elif defined(HAVE_EVP_MD_CTX_DESTROY)
+
