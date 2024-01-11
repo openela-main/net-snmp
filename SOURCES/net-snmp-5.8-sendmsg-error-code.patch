@@ -1,0 +1,12 @@
+diff -urNp a/snmplib/transports/snmpUDPBaseDomain.c b/snmplib/transports/snmpUDPBaseDomain.c
+--- a/snmplib/transports/snmpUDPBaseDomain.c	2023-08-01 08:20:56.776099134 +0200
++++ b/snmplib/transports/snmpUDPBaseDomain.c	2023-08-01 08:23:18.921323874 +0200
+@@ -293,7 +293,7 @@ int netsnmp_udpbase_sendto(int fd, const
+         }
+ 
+         rc = sendmsg(fd, &m, MSG_NOSIGNAL|MSG_DONTWAIT);
+-        if (rc >= 0 || errno != EINVAL)
++        if (rc >= 0 || (errno != EINVAL && errno != ENETUNREACH))
+             return rc;
+ 
+         /*

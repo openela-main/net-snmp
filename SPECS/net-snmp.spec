@@ -10,7 +10,7 @@
 Summary:    A collection of SNMP protocol tools and libraries
 Name:       net-snmp
 Version:    5.8
-Release:    27%{?dist}
+Release:    28%{?dist}
 Epoch:      1
 
 License:    BSD
@@ -76,6 +76,7 @@ Patch47:    net-snmp-5.8-dev-mem-leak.patch
 Patch48:    net-snmp-5.8-CVE-2022-44792-44793.patch
 Patch49:    net-snmp-5.8-ipv6-disable-leak.patch
 Patch50:    net-snmp-5.8-proxy-time-out.patch
+Patch51:    net-snmp-5.8-sendmsg-error-code.patch
 
 # Modern RPM API means at least EL6
 Patch101:   net-snmp-5.8-modern-rpm-api.patch
@@ -251,6 +252,7 @@ rm -r python
 %patch48 -p1 
 %patch49 -p1 -b .ipv6-disable-leak
 %patch50 -p1 -b .proxy-time-out
+%patch51 -p1 -b .sendmsg-error-code
 
 %patch101 -p1 -b .modern-rpm-api
 
@@ -505,6 +507,9 @@ LD_LIBRARY_PATH=%{buildroot}/%{_libdir} make test
 %{_libdir}/libnetsnmptrapd*.so.%{soname}*
 
 %changelog
+* Wed Aug 02 2023 Josef Ridky <jridky@redhat.com> - 1:5.8-28
+- fix sendmsg error code for new kernel (#2185787)
+
 * Tue Jan 31 2023 Josef Ridky <jridky@redhat.com> - 1:5.8-27
 - fix memory leak due of proc file creating (#2105957)
 - fix CVE-2022-44792 and CVE-2022-44793 (#2141901) and (#2141905)
