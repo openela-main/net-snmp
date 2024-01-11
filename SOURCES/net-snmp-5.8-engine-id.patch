@@ -1,0 +1,25 @@
+From 79f014464ba761e2430cc767b021993ab9379822 Mon Sep 17 00:00:00 2001
+From: Wes Hardaker <opensource@hardakers.net>
+Date: Tue, 8 Jan 2019 08:52:29 -0800
+Subject: [PATCH] NEWS: snmptrap: BUG: 2899: Patch from Drew Roedersheimer to
+ set library engineboots/time values before sending
+
+---
+ apps/snmptrap.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/apps/snmptrap.c b/apps/snmptrap.c
+index d16d2fa671..12808d07e4 100644
+--- a/apps/snmptrap.c
++++ b/apps/snmptrap.c
+@@ -237,6 +237,9 @@ main(int argc, char *argv[])
+             session.engineBoots = 1;
+         if (session.engineTime == 0)    /* not really correct, */
+             session.engineTime = get_uptime();  /* but it'll work. Sort of. */
++
++        set_enginetime(session.securityEngineID, session.securityEngineIDLen,
++                       session.engineBoots, session.engineTime, TRUE);
+     }
+ 
+     ss = snmp_add(&session,
+

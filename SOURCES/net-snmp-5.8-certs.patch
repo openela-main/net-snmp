@@ -1,0 +1,12 @@
+diff -urNp a/local/net-snmp-cert b/local/net-snmp-cert
+--- a/local/net-snmp-cert	2021-10-11 09:08:53.451970484 +0200
++++ b/local/net-snmp-cert	2021-10-11 09:11:36.765386413 +0200
+@@ -1002,7 +1002,7 @@ sub make_openssl_conf {
+ rdir            = .
+ dir		= $ENV::DIR
+ RANDFILE	= $rdir/.rand
+-MD		= sha1
++MD		= sha512
+ KSIZE		= 2048
+ CN		= net-snmp.org
+ EMAIL		= admin@net-snmp.org

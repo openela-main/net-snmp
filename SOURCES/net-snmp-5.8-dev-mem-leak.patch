@@ -1,0 +1,35 @@
+From 8bb544fbd2d6986a9b73d3fab49235a4baa96c23 Mon Sep 17 00:00:00 2001
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Sat, 31 Jul 2021 16:21:16 -0700
+Subject: [PATCH] Linux: IF-MIB: Fix a memory leak
+
+The Linux kernel regenerates proc files in their entirety every time a 4 KiB
+boundary is crossed. This can result in reading the same network interface
+twice if network information changes while it is being read. Fix a memory
+leak that can be triggered if /proc/net/dev changes while being read.
+---
+ agent/mibgroup/if-mib/data_access/interface_linux.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/agent/mibgroup/if-mib/data_access/interface_linux.c b/agent/mibgroup/if-mib/data_access/interface_linux.c
+index e99360a216..215b30e806 100644
+--- a/agent/mibgroup/if-mib/data_access/interface_linux.c
++++ b/agent/mibgroup/if-mib/data_access/interface_linux.c
+@@ -921,7 +921,15 @@ netsnmp_arch_interface_container_load(netsnmp_container* container,
+         /*
+          * add to container
+          */
+-        CONTAINER_INSERT(container, entry);
++        if (CONTAINER_INSERT(container, entry) != 0) {
++            netsnmp_interface_entry *existing =
++                CONTAINER_FIND(container, entry);
++            NETSNMP_LOGONCE((LOG_WARNING,
++                             "Encountered interface with index %" NETSNMP_PRIz "u twice: %s <> %s",
++                             entry->index, existing ? existing->name : "(?)",
++                             entry->name));
++            netsnmp_access_interface_entry_free(entry);
++        }
+     }
+ #ifdef NETSNMP_ENABLE_IPV6
+     netsnmp_access_ipaddress_container_free(addr_container, 0);
+

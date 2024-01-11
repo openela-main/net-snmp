@@ -1,0 +1,41 @@
+diff -up net-snmp-5.8/agent/mibgroup/if-mib/data_access/interface_linux.c.original net-snmp-5.8/agent/mibgroup/if-mib/data_access/interface_linux.c
+--- net-snmp-5.8/agent/mibgroup/if-mib/data_access/interface_linux.c.original	2022-02-02 15:06:29.382119898 +0900
++++ net-snmp-5.8/agent/mibgroup/if-mib/data_access/interface_linux.c	2022-02-02 15:15:39.298280447 +0900
+@@ -600,7 +600,6 @@ netsnmp_arch_interface_container_load(ne
+ {
+     FILE           *devin;
+     char            line[256];
+-    netsnmp_interface_entry *entry = NULL;
+     static char     scan_expected = 0;
+     int             fd;
+ #ifdef NETSNMP_ENABLE_IPV6
+@@ -669,6 +668,7 @@ netsnmp_arch_interface_container_load(ne
+      *   and retrieve (or create) the corresponding data structure.
+      */
+     while (fgets(line, sizeof(line), devin)) {
++        netsnmp_interface_entry *entry = NULL;
+         char           *stats, *ifstart = line;
+         u_int           flags;
+         oid             if_index;
+@@ -701,6 +701,11 @@ netsnmp_arch_interface_container_load(ne
+         *stats++ = 0; /* null terminate name */
+ 
+         if_index = netsnmp_arch_interface_index_find(ifstart);
++        if (if_index == 0) {
++            DEBUGMSGTL(("access:interface", "network interface %s is gone",
++                        ifstart));
++            continue;
++        }
+ 
+         /*
+          * set address type flags.
+@@ -726,7 +731,7 @@ netsnmp_arch_interface_container_load(ne
+             continue;
+         }
+ 
+-        entry = netsnmp_access_interface_entry_create(ifstart, 0);
++        entry = netsnmp_access_interface_entry_create(ifstart, if_index);
+         if(NULL == entry) {
+ #ifdef NETSNMP_ENABLE_IPV6
+             netsnmp_access_ipaddress_container_free(addr_container, 0);
+
