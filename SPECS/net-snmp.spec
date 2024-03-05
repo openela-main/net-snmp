@@ -10,7 +10,7 @@
 Summary:    A collection of SNMP protocol tools and libraries
 Name:       net-snmp
 Version:    5.9.1
-Release:    11%{?dist}
+Release:    11%{?dist}.1
 Epoch:      1
 
 License:    BSD
@@ -55,6 +55,7 @@ Patch25:    net-snmp-5.9-openssl-3.0.patch
 Patch26:    net-snmp-5.9-CVE-2022-44792-44793.patch
 Patch27:    net-snmp-5.9-ipv6-disable-leak.patch
 Patch28:    net-snmp-5.9-sendmsg-error-code.patch
+Patch29:    net-snmp-5.9-message-severity.patch
 
 # Modern RPM API means at least EL6
 Patch101:   net-snmp-5.8-modern-rpm-api.patch
@@ -235,6 +236,7 @@ cp %{SOURCE10} .
 %patch26 -p1
 %patch27 -p1 -b .ipv6-disable-leak
 %patch28 -p1 -b .sendmsg-error-code
+%patch29 -p1 -b .message-severity
 
 %patch101 -p1 -b .modern-rpm-api
 %patch102 -p1
@@ -504,6 +506,9 @@ LD_LIBRARY_PATH=%{buildroot}/%{_libdir} make test
 %{_libdir}/libnetsnmptrapd*.so.%{soname}*
 
 %changelog
+* Mon Oct 23 2023 Josef Ridky <jridky@redhat.com> - 1:5.9.1-11.1
+- fix message severity issue (RHEL-13958)
+
 * Thu Aug 03 2023 Josef Ridky <jridky@redhat.com> - 1:5.9.1-11
 - fix python3 missing epoch
 
