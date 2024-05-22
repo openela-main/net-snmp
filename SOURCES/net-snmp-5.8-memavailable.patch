@@ -1,0 +1,143 @@
+From 5b8bf5d4130761c3374f9ad618e8a76bb75eb634 Mon Sep 17 00:00:00 2001
+From: Yuwei Ba <i@xiaoba.me>
+Date: Fri, 21 Aug 2020 15:06:10 +0800
+Subject: [PATCH] snmpd: support MemAvailable on Linux
+
+See also https://github.com/net-snmp/net-snmp/pull/167 .
+
+[bvanassche: modified the behavior of this patch]
+---
+ agent/mibgroup/hardware/memory/memory_linux.c | 20 ++++++++++++++++++-
+ agent/mibgroup/ucd-snmp/memory.c              | 12 ++++++++++-
+ agent/mibgroup/ucd-snmp/memory.h              |  1 +
+ include/net-snmp/agent/hardware/memory.h      |  1 +
+ mibs/UCD-SNMP-MIB.txt                         | 16 +++++++++++++++
+ 5 files changed, 48 insertions(+), 2 deletions(-)
+
+diff --git a/agent/mibgroup/hardware/memory/memory_linux.c b/agent/mibgroup/hardware/memory/memory_linux.c
+index 6d5e86cde4..4ae235c2d0 100644
+--- a/agent/mibgroup/hardware/memory/memory_linux.c
++++ b/agent/mibgroup/hardware/memory/memory_linux.c
+@@ -24,7 +24,8 @@ int netsnmp_mem_arch_load( netsnmp_cache *cache, void *magic ) {
+     static int   first = 1;
+     ssize_t      bytes_read;
+     char        *b;
+-    unsigned long memtotal = 0,  memfree = 0, memshared = 0,
++    int          have_memavail = 0;
++    unsigned long memtotal = 0,  memavail = 0, memfree = 0, memshared = 0,
+                   buffers = 0,   cached = 0, sreclaimable = 0,
+                   swaptotal = 0, swapfree = 0;
+ 
+@@ -81,6 +82,11 @@ int netsnmp_mem_arch_load( netsnmp_cache *cache, void *magic ) {
+         if (first)
+             snmp_log(LOG_ERR, "No MemTotal line in /proc/meminfo\n");
+     }
++    b = strstr(buff, "MemAvailable: ");
++    if (b) {
++        have_memavail = 1;
++        sscanf(b, "MemAvailable: %lu", &memavail);
++    }
+     b = strstr(buff, "MemFree: ");
+     if (b) 
+         sscanf(b, "MemFree: %lu", &memfree);
+@@ -151,6 +157,18 @@ int netsnmp_mem_arch_load( netsnmp_cache *cache, void *magic ) {
+         mem->other = -1;
+     }
+ 
++    if (have_memavail) {
++        mem = netsnmp_memory_get_byIdx(NETSNMP_MEM_TYPE_AVAILMEM, 1);
++        if (mem) {
++            if (!mem->descr)
++                mem->descr = strdup("Available memory");
++            mem->units = 1024;
++            mem->size  = memavail;
++            mem->free  = memavail;
++            mem->other = -1;
++        }
++    }
++
+     mem = netsnmp_memory_get_byIdx( NETSNMP_MEM_TYPE_VIRTMEM, 1 );
+     if (!mem) {
+         snmp_log_perror("No Virtual Memory info entry");
+diff --git a/agent/mibgroup/ucd-snmp/memory.c b/agent/mibgroup/ucd-snmp/memory.c
+index 371a77e9a5..158b28e67b 100644
+--- a/agent/mibgroup/ucd-snmp/memory.c
++++ b/agent/mibgroup/ucd-snmp/memory.c
+@@ -26,7 +26,7 @@ init_memory(void)
+         netsnmp_create_handler_registration("memory", handle_memory,
+                                  memory_oid, OID_LENGTH(memory_oid),
+                                              HANDLER_CAN_RONLY),
+-                                 1, 26);
++                                 1, 27);
+     netsnmp_register_scalar(
+         netsnmp_create_handler_registration("memSwapError", handle_memory,
+                            memSwapError_oid, OID_LENGTH(memSwapError_oid),
+@@ -272,6 +272,16 @@ handle_memory(netsnmp_mib_handler *handler,
+ 	    c64.low = val & 0xFFFFFFFF;
+ 	    c64.high = val >>32;
+             break;
++        case MEMORY_SYS_AVAIL:
++	    type = ASN_COUNTER64;
++            mem_info = netsnmp_memory_get_byIdx(NETSNMP_MEM_TYPE_AVAILMEM, 0);
++            if (!mem_info)
++                goto NOSUCH;
++            val = mem_info->size;       /* memavail */
++            val *= (mem_info->units/1024);
++	    c64.low = val & 0xFFFFFFFF;
++	    c64.high = val >> 32;
++            break;
+         case MEMORY_SWAP_ERROR:
+             mem_info = netsnmp_memory_get_byIdx( NETSNMP_MEM_TYPE_SWAP, 0 );
+             if (!mem_info)
+diff --git a/agent/mibgroup/ucd-snmp/memory.h b/agent/mibgroup/ucd-snmp/memory.h
+index ded2140227..54a56a2fdb 100644
+--- a/agent/mibgroup/ucd-snmp/memory.h
++++ b/agent/mibgroup/ucd-snmp/memory.h
+@@ -41,6 +41,7 @@ Netsnmp_Node_Handler handle_memory;
+ #define MEMORY_SHARED_X     24
+ #define MEMORY_BUFFER_X     25
+ #define MEMORY_CACHED_X     26
++#define MEMORY_SYS_AVAIL    27
+ #define MEMORY_SWAP_ERROR  100
+ #define MEMORY_SWAP_ERRMSG 101
+ #endif                          /* MEMORY_H */
+diff --git a/include/net-snmp/agent/hardware/memory.h b/include/net-snmp/agent/hardware/memory.h
+index 54265cf22a..aca3a4d00d 100644
+--- a/include/net-snmp/agent/hardware/memory.h
++++ b/include/net-snmp/agent/hardware/memory.h
+@@ -10,6 +10,7 @@ typedef struct netsnmp_memory_info_s netsnmp_memory_info;
+ #define NETSNMP_MEM_TYPE_SHARED   8
+ #define NETSNMP_MEM_TYPE_SHARED2  9
+ #define NETSNMP_MEM_TYPE_SWAP    10
++#define NETSNMP_MEM_TYPE_AVAILMEM 11
+     /* Leave space for individual swap devices */
+ #define NETSNMP_MEM_TYPE_MAX     30
+ 
+diff --git a/mibs/UCD-SNMP-MIB.txt b/mibs/UCD-SNMP-MIB.txt
+index cde67feb50..d360bad025 100644
+--- a/mibs/UCD-SNMP-MIB.txt
++++ b/mibs/UCD-SNMP-MIB.txt
+@@ -746,6 +746,22 @@ memCachedX OBJECT-TYPE
+          memory as specifically reserved for this purpose."
+     ::= { memory 26 }
+ 
++memSysAvail OBJECT-TYPE
++    SYNTAX	CounterBasedGauge64
++    UNITS       "kB"
++    MAX-ACCESS	read-only
++    STATUS	current
++    DESCRIPTION
++        "The total amount of available memory, which is an estimate
++         of how much memory is available for starting new applications,
++         without swapping.
++
++         This object will not be implemented on hosts where the
++         underlying operating system does not explicitly identify
++         memory as specifically reserved for this purpose."
++    ::= { memory 27 }
++
++
+ memSwapError OBJECT-TYPE
+     SYNTAX	UCDErrorFlag
+     MAX-ACCESS	read-only
+

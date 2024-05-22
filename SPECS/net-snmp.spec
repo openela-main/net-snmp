@@ -10,7 +10,7 @@
 Summary:    A collection of SNMP protocol tools and libraries
 Name:       net-snmp
 Version:    5.8
-Release:    28%{?dist}
+Release:    30%{?dist}
 Epoch:      1
 
 License:    BSD
@@ -77,6 +77,10 @@ Patch48:    net-snmp-5.8-CVE-2022-44792-44793.patch
 Patch49:    net-snmp-5.8-ipv6-disable-leak.patch
 Patch50:    net-snmp-5.8-proxy-time-out.patch
 Patch51:    net-snmp-5.8-sendmsg-error-code.patch
+Patch52:    net-snmp-5.8-memavailable.patch
+Patch53:    net-snmp-5.8-proxy.patch
+Patch54:    net-snmp-5.8-truncating-log-once.patch
+Patch55:    net-snmp-5.8-CVE-2022-24805-24810.patch
 
 # Modern RPM API means at least EL6
 Patch101:   net-snmp-5.8-modern-rpm-api.patch
@@ -253,6 +257,10 @@ rm -r python
 %patch49 -p1 -b .ipv6-disable-leak
 %patch50 -p1 -b .proxy-time-out
 %patch51 -p1 -b .sendmsg-error-code
+%patch52 -p1 -b .memavailable
+%patch53 -p1 -b .proxy
+%patch54 -p1 -b .truncating-log-once
+%patch55 -p1 -b .CVE-2022-24805-24810
 
 %patch101 -p1 -b .modern-rpm-api
 
@@ -507,6 +515,15 @@ LD_LIBRARY_PATH=%{buildroot}/%{_libdir} make test
 %{_libdir}/libnetsnmptrapd*.so.%{soname}*
 
 %changelog
+* Mon Mar 04 2024 Josef Ridky <jridky@redhat.com> - 1:5.8-30
+- fix crash when configured as proxy - issue 82 (RHEL-14454)
+- log once truncating issue (RHEL-13597)
+- fix CVE-2022-24805, CVE-2022-24806, CVE-2022-24807, CVE-2022-24808,
+  CVE-2022-24809 and CVE-2022-24810 (RHEL-26650)
+
+* Tue Jan 23 2024 Josef Ridky <jridky@redhat.com> - 1:5.8-29
+- backport MemAvailable report from upstream (RHEL-21780)
+
 * Wed Aug 02 2023 Josef Ridky <jridky@redhat.com> - 1:5.8-28
 - fix sendmsg error code for new kernel (#2185787)
 
