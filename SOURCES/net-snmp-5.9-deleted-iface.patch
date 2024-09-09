@@ -1,0 +1,43 @@
+diff -urNp a/agent/mibgroup/if-mib/data_access/interface_linux.c b/agent/mibgroup/if-mib/data_access/interface_linux.c
+--- a/agent/mibgroup/if-mib/data_access/interface_linux.c	2024-07-16 10:05:43.294653089 +0200
++++ b/agent/mibgroup/if-mib/data_access/interface_linux.c	2024-07-16 10:23:55.392041022 +0200
+@@ -609,7 +609,6 @@ netsnmp_arch_interface_container_load(ne
+ {
+     FILE           *devin;
+     char            line[256];
+-    netsnmp_interface_entry *entry = NULL;
+     static char     scan_expected = 0;
+     int             fd;
+     int             interfaces = 0;
+@@ -690,6 +689,7 @@ netsnmp_arch_interface_container_load(ne
+      *   and retrieve (or create) the corresponding data structure.
+      */
+     while (fgets(line, sizeof(line), devin)) {
++        netsnmp_interface_entry *entry = NULL;
+         char           *stats, *ifstart = line;
+         u_int           flags;
+         oid             if_index;
+@@ -733,8 +733,13 @@ netsnmp_arch_interface_container_load(ne
+          * ip version is to look for ip addresses. If anyone
+          * knows a better way, put it here!
+          */
+-#ifdef NETSNMP_ENABLE_IPV6
+         if_index = netsnmp_arch_interface_index_find(ifstart);
++        if (if_index == 0) {
++            DEBUGMSGTL(("access:interface", "network interface %s is gone",
++                        ifstart));
++            continue;
++        }
++#ifdef NETSNMP_ENABLE_IPV6
+         _arch_interface_has_ipv6(if_index, &flags, addr_container);
+ #endif
+         netsnmp_access_interface_ioctl_has_ipv4(fd, ifstart, 0, &flags, &ifc);
+@@ -752,7 +757,7 @@ netsnmp_arch_interface_container_load(ne
+             continue;
+         }
+ 
+-        entry = netsnmp_access_interface_entry_create(ifstart, 0);
++        entry = netsnmp_access_interface_entry_create(ifstart, if_index);
+         if(NULL == entry) {
+ #ifdef NETSNMP_ENABLE_IPV6
+             netsnmp_access_ipaddress_container_free(addr_container, 0);

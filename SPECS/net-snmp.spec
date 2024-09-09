@@ -10,7 +10,7 @@
 Summary:    A collection of SNMP protocol tools and libraries
 Name:       net-snmp
 Version:    5.9.1
-Release:    13%{?dist}
+Release:    13%{?dist}.2
 Epoch:      1
 
 License:    BSD
@@ -57,6 +57,8 @@ Patch27:    net-snmp-5.9-ipv6-disable-leak.patch
 Patch28:    net-snmp-5.9-sendmsg-error-code.patch
 Patch29:    net-snmp-5.9-message-severity.patch
 Patch30:    net-snmp-5.9-rpmdb.patch
+Patch31:    net-snmp-5.9-kernel-6.7.patch
+Patch32:    net-snmp-5.9-deleted-iface.patch
 
 # Modern RPM API means at least EL6
 Patch101:   net-snmp-5.8-modern-rpm-api.patch
@@ -239,6 +241,8 @@ cp %{SOURCE10} .
 %patch28 -p1 -b .sendmsg-error-code
 %patch29 -p1 -b .message-severity
 %patch30 -p1 -b .rpmdb
+%patch31 -p1 -b .kernel-patch
+%patch32 -p1 -b .iface
 
 %patch101 -p1 -b .modern-rpm-api
 %patch102 -p1
@@ -508,6 +512,12 @@ LD_LIBRARY_PATH=%{buildroot}/%{_libdir} make test
 %{_libdir}/libnetsnmptrapd*.so.%{soname}*
 
 %changelog
+* Tue Jul 16 2024 Josef Ridky <jridky@redhat.com> - 1:5.9.1-13.2
+- fix segfault with error on subcontainer (RHEL-46039)
+
+* Thu Jun 27 2024 Josef Ridky <jridky@redhat.com> - 1:5.9.1-13.1
+- fix unexpected header length with new kernel (RHEL-40403)
+
 * Thu Oct 19 2023 Josef Ridky <jridky@redhat.com> - 1:5.9.1-13
 - add support for SQLite db background of rpm (RHEL-6854)
 
