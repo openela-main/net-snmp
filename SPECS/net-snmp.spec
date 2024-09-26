@@ -10,7 +10,7 @@
 Summary:    A collection of SNMP protocol tools and libraries
 Name:       net-snmp
 Version:    5.9.1
-Release:    13%{?dist}.2
+Release:    13%{?dist}.3
 Epoch:      1
 
 License:    BSD
@@ -59,6 +59,7 @@ Patch29:    net-snmp-5.9-message-severity.patch
 Patch30:    net-snmp-5.9-rpmdb.patch
 Patch31:    net-snmp-5.9-kernel-6.7.patch
 Patch32:    net-snmp-5.9-deleted-iface.patch
+Patch33:    net-snmp-5.9-CVE-2022-24805-24810.patch
 
 # Modern RPM API means at least EL6
 Patch101:   net-snmp-5.8-modern-rpm-api.patch
@@ -243,6 +244,7 @@ cp %{SOURCE10} .
 %patch30 -p1 -b .rpmdb
 %patch31 -p1 -b .kernel-patch
 %patch32 -p1 -b .iface
+%patch33 -p1 -b .CVE-2022-24805-24810
 
 %patch101 -p1 -b .modern-rpm-api
 %patch102 -p1
@@ -512,6 +514,10 @@ LD_LIBRARY_PATH=%{buildroot}/%{_libdir} make test
 %{_libdir}/libnetsnmptrapd*.so.%{soname}*
 
 %changelog
+* Fri Sep 20 2024 Stepan Broz <sbroz@redhat.com> - 1:5.9.1-13.3
+- fix CVE-2022-24805, CVE-2022-24806, CVE-2022-24807, CVE-2022-24808,
+  CVE-2022-24809 and CVE-2022-24810 (RHEL-32062)
+
 * Tue Jul 16 2024 Josef Ridky <jridky@redhat.com> - 1:5.9.1-13.2
 - fix segfault with error on subcontainer (RHEL-46039)
 
