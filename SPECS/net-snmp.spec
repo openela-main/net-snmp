@@ -10,7 +10,7 @@
 Summary:    A collection of SNMP protocol tools and libraries
 Name:       net-snmp
 Version:    5.9.1
-Release:    13%{?dist}.3
+Release:    17%{?dist}
 Epoch:      1
 
 License:    BSD
@@ -57,9 +57,9 @@ Patch27:    net-snmp-5.9-ipv6-disable-leak.patch
 Patch28:    net-snmp-5.9-sendmsg-error-code.patch
 Patch29:    net-snmp-5.9-message-severity.patch
 Patch30:    net-snmp-5.9-rpmdb.patch
-Patch31:    net-snmp-5.9-kernel-6.7.patch
-Patch32:    net-snmp-5.9-deleted-iface.patch
-Patch33:    net-snmp-5.9-CVE-2022-24805-24810.patch
+Patch31:    net-snmp-5.9-CVE-2022-24805-24810.patch
+Patch32:    net-snmp-5.9.4-kernel-6.7.patch
+Patch33:    net-snmp-5.9-deleted-iface.patch
 
 # Modern RPM API means at least EL6
 Patch101:   net-snmp-5.8-modern-rpm-api.patch
@@ -242,9 +242,9 @@ cp %{SOURCE10} .
 %patch28 -p1 -b .sendmsg-error-code
 %patch29 -p1 -b .message-severity
 %patch30 -p1 -b .rpmdb
-%patch31 -p1 -b .kernel-patch
-%patch32 -p1 -b .iface
-%patch33 -p1 -b .CVE-2022-24805-24810
+%patch31 -p1 -b .CVE-2022-24805-24810
+%patch32 -p1 -b .kernel-6.7-fix
+%patch33 -p1 -b .iface
 
 %patch101 -p1 -b .modern-rpm-api
 %patch102 -p1
@@ -514,15 +514,18 @@ LD_LIBRARY_PATH=%{buildroot}/%{_libdir} make test
 %{_libdir}/libnetsnmptrapd*.so.%{soname}*
 
 %changelog
-* Fri Sep 20 2024 Stepan Broz <sbroz@redhat.com> - 1:5.9.1-13.3
+* Tue Jul 16 2024 Josef Ridky <jridky@redhat.com> - 1:5.9.1-17
+- fix segfault with error on subcontainer (RHEL-46033)
+
+* Fri Jun 21 2024 Josef Ridky <jridky@redhat.com> - 1:5.9.1-16
+- fix unexpected header length in /proc/net/snmp (RHEL-44357)
+
+* Tue Apr 09 2024 Josef Ridky <jridky@redhat.com> - 1:5.9.1-15
+- fix changelog issue
+
+* Tue Apr 09 2024 Josef Ridky <jridky@redhat.com> - 1:5.9.1-14
 - fix CVE-2022-24805, CVE-2022-24806, CVE-2022-24807, CVE-2022-24808,
-  CVE-2022-24809 and CVE-2022-24810 (RHEL-32062)
-
-* Tue Jul 16 2024 Josef Ridky <jridky@redhat.com> - 1:5.9.1-13.2
-- fix segfault with error on subcontainer (RHEL-46039)
-
-* Thu Jun 27 2024 Josef Ridky <jridky@redhat.com> - 1:5.9.1-13.1
-- fix unexpected header length with new kernel (RHEL-40403)
+  CVE-2022-24809 and CVE-2022-24810 (RHEL-26649)
 
 * Thu Oct 19 2023 Josef Ridky <jridky@redhat.com> - 1:5.9.1-13
 - add support for SQLite db background of rpm (RHEL-6854)
