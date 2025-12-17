@@ -10,7 +10,7 @@
 Summary:    A collection of SNMP protocol tools and libraries
 Name:       net-snmp
 Version:    5.8
-Release:    31%{?dist}
+Release:    32%{?dist}
 Epoch:      1
 
 License:    BSD
@@ -82,6 +82,7 @@ Patch53:    net-snmp-5.8-proxy.patch
 Patch54:    net-snmp-5.8-truncating-log-once.patch
 Patch55:    net-snmp-5.8-CVE-2022-24805-24810.patch
 Patch56:    net-snmp-5.8-callback-fix.patch
+Patch57:    net-snmp-5.8-engine-evaluation.patch
 
 # Modern RPM API means at least EL6
 Patch101:   net-snmp-5.8-modern-rpm-api.patch
@@ -263,6 +264,7 @@ rm -r python
 %patch54 -p1 -b .truncating-log-once
 %patch55 -p1 -b .CVE-2022-24805-24810
 %patch56 -p1 -b .callback-fix
+%patch57 -p1 -b .engine-evaluation
 
 %patch101 -p1 -b .modern-rpm-api
 
@@ -517,6 +519,9 @@ LD_LIBRARY_PATH=%{buildroot}/%{_libdir} make test
 %{_libdir}/libnetsnmptrapd*.so.%{soname}*
 
 %changelog
+* Wed Oct 29 2025 Josef Ridky <jridky@redhat.com> - 1:5.8-32
+- fix engine order of evaluation (RHEL-116089)
+
 * Wed Aug 13 2025 Josef Ridky <jridky@redhat.com> - 1:5.8-31
 - fix use after free issue (RHEL-64696)
 

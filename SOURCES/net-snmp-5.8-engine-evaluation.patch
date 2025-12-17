@@ -1,0 +1,37 @@
+From 92bd7da2ef28b697fce8a9674087a5aba6aed744 Mon Sep 17 00:00:00 2001
+From: unknown <maka6868@gmail.com>
+Date: Mon, 9 Jan 2023 21:24:33 +0100
+Subject: [PATCH] Fix order of evaluation
+
+---
+ snmplib/snmpv3.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/snmplib/snmpv3.c b/snmplib/snmpv3.c
+index d650e12a3a..770ccad892 100644
+--- a/snmplib/snmpv3.c
++++ b/snmplib/snmpv3.c
+@@ -1052,6 +1052,8 @@ init_snmpv3_post_config(int majorid, int minorid, void *serverarg,
+ 
+     size_t          engineIDLen;
+     u_char         *c_engineID;
++    u_long          localEngineTime;
++    u_long          localEngineBoots;
+ 
+     c_engineID = snmpv3_generate_engineID(&engineIDLen);
+ 
+@@ -1076,9 +1078,11 @@ init_snmpv3_post_config(int majorid, int minorid, void *serverarg,
+     /*
+      * for USM set our local engineTime in the LCD timing cache 
+      */
++    localEngineTime = snmpv3_local_snmpEngineTime();
++    localEngineBoots = snmpv3_local_snmpEngineBoots();
+     set_enginetime(c_engineID, engineIDLen,
+-                   snmpv3_local_snmpEngineBoots(),
+-                   snmpv3_local_snmpEngineTime(), TRUE);
++                   localEngineBoots,
++                   localEngineTime, TRUE);
+ #endif /* NETSNMP_SECMOD_USM */
+ 
+     SNMP_FREE(c_engineID);
+
