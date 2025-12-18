@@ -10,7 +10,7 @@
 Summary:    A collection of SNMP protocol tools and libraries
 Name:       net-snmp
 Version:    5.9.4
-Release:    15%{?dist}
+Release:    15%{?dist}.1
 Epoch:      1
 
 License:    MIT-CMU and BSD-3-Clause and MIT and OpenSSL
@@ -53,6 +53,7 @@ Patch23:    net-snmp-5.9-rpmdb.patch
 Patch24:    net-snmp-5.9.4-test-fix.patch
 Patch25:    net-snmp-5.9.4-kernel-6.7.patch
 Patch26:    net-snmp-5.9.4-remove-mail-sender.patch
+Patch27:    net-snmp-5.9.4-tls.patch
 
 # Modern RPM API means at least EL6
 Patch101:   net-snmp-5.8-modern-rpm-api.patch
@@ -245,6 +246,7 @@ cp %{SOURCE10} .
 %patch 24 -p1 -b .test-fix
 %patch 25 -p1 -b .kernel-fix
 %patch 26 -p1 -b .remove-mail-sender
+%patch 27 -p1 -b .tls
 
 %patch 101 -p1 -b .modern-rpm-api
 %patch 102 -p1
@@ -515,6 +517,9 @@ LD_LIBRARY_PATH=%{buildroot}/%{_libdir} make test
 %{_libdir}/libnetsnmptrapd*.so.%{soname}*
 
 %changelog
+* Mon Sep 08 2025 Josef Ridky <jridky@redhat.com> - 1:5.9.4-15.1
+- enable PQC (RHEL-112338)
+
 * Fri Mar 21 2025 Josef Ridky <jridky@redhat.com> - 1:5.9.4-15
 - Resolves: RHEL-81121
 
