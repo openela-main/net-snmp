@@ -10,7 +10,7 @@
 Summary:    A collection of SNMP protocol tools and libraries
 Name:       net-snmp
 Version:    5.8
-Release:    32%{?dist}
+Release:    33%{?dist}
 Epoch:      1
 
 License:    BSD
@@ -83,6 +83,8 @@ Patch54:    net-snmp-5.8-truncating-log-once.patch
 Patch55:    net-snmp-5.8-CVE-2022-24805-24810.patch
 Patch56:    net-snmp-5.8-callback-fix.patch
 Patch57:    net-snmp-5.8-engine-evaluation.patch
+Patch58:    net-snmp-5.9.4-oob-access.patch
+Patch59:    net-snmp-5.8-perl-modern-auth-enablement.patch
 
 # Modern RPM API means at least EL6
 Patch101:   net-snmp-5.8-modern-rpm-api.patch
@@ -265,6 +267,8 @@ rm -r python
 %patch55 -p1 -b .CVE-2022-24805-24810
 %patch56 -p1 -b .callback-fix
 %patch57 -p1 -b .engine-evaluation
+%patch58 -p1 -b .oob-access
+%patch59 -p1 -b .perl-auth-enablement
 
 %patch101 -p1 -b .modern-rpm-api
 
@@ -519,6 +523,10 @@ LD_LIBRARY_PATH=%{buildroot}/%{_libdir} make test
 %{_libdir}/libnetsnmptrapd*.so.%{soname}*
 
 %changelog
+* Wed Jan 14 2026 Josef Ridky <jridky@redhat.com> - 1:5.8-33
+- fix out of bound access (RHEL-137501)
+- perl modern auth enablement (RHEL-137310)
+
 * Wed Oct 29 2025 Josef Ridky <jridky@redhat.com> - 1:5.8-32
 - fix engine order of evaluation (RHEL-116089)
 

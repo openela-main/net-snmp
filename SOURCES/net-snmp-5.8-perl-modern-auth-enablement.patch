@@ -1,0 +1,108 @@
+diff -up net-snmp-5.8/include/net-snmp/library/scapi.h.rhcase04340580 net-snmp-5.8/include/net-snmp/library/scapi.h
+--- net-snmp-5.8/include/net-snmp/library/scapi.h.rhcase04340580	2026-01-07 09:24:59.756322331 +0100
++++ net-snmp-5.8/include/net-snmp/library/scapi.h	2026-01-07 09:25:38.665568566 +0100
+@@ -87,9 +87,9 @@ typedef struct netsnmp_priv_alg_info_s {
+     NETSNMP_IMPORT
+     oid *           sc_get_auth_oid(int auth_type, size_t *oid_len);
+     NETSNMP_IMPORT
+-    netsnmp_auth_alg_info * sc_get_auth_alg_byoid(const oid *oid, u_int len);
++    netsnmp_auth_alg_info * sc_find_auth_alg_byoid(const oid *oid, u_int len);
+     NETSNMP_IMPORT
+-    netsnmp_auth_alg_info * sc_get_auth_alg_bytype(u_int type);
++    netsnmp_auth_alg_info * sc_find_auth_alg_bytype(u_int type);
+     NETSNMP_IMPORT
+     netsnmp_auth_alg_info * sc_get_auth_alg_byindex(u_int index);
+ 
+diff -up net-snmp-5.8/perl/SNMP/SNMP.xs.rhcase04340580 net-snmp-5.8/perl/SNMP/SNMP.xs
+--- net-snmp-5.8/perl/SNMP/SNMP.xs.rhcase04340580	2026-01-05 11:30:22.717000136 +0100
++++ net-snmp-5.8/perl/SNMP/SNMP.xs	2026-01-05 11:44:27.466329639 +0100
+@@ -2633,6 +2633,7 @@ snmp_new_v3_session(version, peer, retri
+ 	   SnmpSession session = {0};
+ 	   SnmpSession *ss = NULL;
+            int verbose = SvIV(perl_get_sv("SNMP::verbose", 0x01 | 0x04));
++           int auth_type, priv_type;
+ 
+            snmp_sess_init(&session);
+ 
+@@ -2664,25 +2665,25 @@ snmp_new_v3_session(version, peer, retri
+                              (char **) &session.contextEngineID);
+            session.engineBoots = eng_boots;
+            session.engineTime = eng_time;
+-#ifndef NETSNMP_DISABLE_MD5
+-           if (!strcmp(auth_proto, "MD5")) {
+-               session.securityAuthProto = 
+-                  snmp_duplicate_objid(usmHMACMD5AuthProtocol,
+-                                          OID_LENGTH(usmHMACMD5AuthProtocol));
+-              session.securityAuthProtoLen = OID_LENGTH(usmHMACMD5AuthProtocol);
+-           } else
+-#endif
+-               if (!strcmp(auth_proto, "SHA")) {
+-               session.securityAuthProto = 
+-                   snmp_duplicate_objid(usmHMACSHA1AuthProtocol,
+-                                        OID_LENGTH(usmHMACSHA1AuthProtocol));
+-              session.securityAuthProtoLen = OID_LENGTH(usmHMACSHA1AuthProtocol);
+-           } else if (!strcmp(auth_proto, "DEFAULT")) {
++           /* NETSNMP_USMAUTH_* */
++           auth_type = usm_lookup_auth_type(auth_proto);
++           if (auth_type >= 0) {
++               const netsnmp_auth_alg_info *auth_alg_info =
++                   sc_find_auth_alg_bytype(auth_type);
++               if (auth_alg_info) {
++                   session.securityAuthProto =
++                       snmp_duplicate_objid(auth_alg_info->alg_oid,
++                                            auth_alg_info->oid_len);
++                   session.securityAuthProtoLen = auth_alg_info->oid_len;
++               }
++           }
++           if (strcmp(auth_proto, "DEFAULT") == 0) {
+                const oid *theoid =
+                    get_default_authtype(&session.securityAuthProtoLen);
+                session.securityAuthProto = 
+                    snmp_duplicate_objid(theoid, session.securityAuthProtoLen);
+-           } else {
++           }
++           if (session.securityAuthProto == NULL) {
+               if (verbose)
+                  warn("error:snmp_new_v3_session:Unsupported authentication protocol(%s)\n", auth_proto);
+               goto end;
+@@ -2714,25 +2715,24 @@ snmp_new_v3_session(version, peer, retri
+                    }
+                }
+            }
+-#ifndef NETSNMP_DISABLE_DES
+-           if (!strcmp(priv_proto, "DES")) {
+-              session.securityPrivProto =
+-                  snmp_duplicate_objid(usmDESPrivProtocol,
+-                                       OID_LENGTH(usmDESPrivProtocol));
+-              session.securityPrivProtoLen = OID_LENGTH(usmDESPrivProtocol);
+-           } else
+-#endif
+-               if (!strncmp(priv_proto, "AES", 3)) {
+-              session.securityPrivProto =
+-                  snmp_duplicate_objid(usmAESPrivProtocol,
+-                                       OID_LENGTH(usmAESPrivProtocol));
+-              session.securityPrivProtoLen = OID_LENGTH(usmAESPrivProtocol);
+-           } else if (!strcmp(priv_proto, "DEFAULT")) {
++           priv_type = usm_lookup_priv_type(priv_proto);
++           if (priv_type >= 0) {
++               const netsnmp_priv_alg_info *priv_alg_info =
++                   sc_get_priv_alg_bytype(priv_type);
++               if (priv_alg_info) {
++                   session.securityPrivProto =
++                       snmp_duplicate_objid(priv_alg_info->alg_oid,
++                                            priv_alg_info->oid_len);
++                   session.securityPrivProtoLen = priv_alg_info->oid_len;
++               }
++           }
++           if (strcmp(priv_proto, "DEFAULT") == 0) {
+                const oid *theoid =
+                    get_default_privtype(&session.securityPrivProtoLen);
+                session.securityPrivProto = 
+                    snmp_duplicate_objid(theoid, session.securityPrivProtoLen);
+-           } else {
++           }
++           if (session.securityPrivProto == NULL) {
+               if (verbose)
+                  warn("error:snmp_new_v3_session:Unsupported privacy protocol(%s)\n", priv_proto);
+               goto end;
+
