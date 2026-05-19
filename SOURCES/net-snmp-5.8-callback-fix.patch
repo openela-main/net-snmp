@@ -1,0 +1,32 @@
+diff -urNp a/snmplib/callback.c b/snmplib/callback.c
+--- a/snmplib/callback.c	2025-08-13 15:21:25.507544080 +0200
++++ b/snmplib/callback.c	2025-08-13 15:25:01.973092935 +0200
+@@ -346,13 +346,17 @@ snmp_call_callbacks(int major, int minor
+     /*
+      * for each registered callback of type major and minor 
+      */
+-    for (scp = thecallbacks[major][minor]; scp != NULL; scp = scp->next) {
++    scp = thecallbacks[major][minor];
++    while (scp != NULL) {
++        struct snmp_gen_callback *scp_next = scp->next;
+ 
+         /*
+          * skip unregistered callbacks
+          */
+-        if(NULL == scp->sc_callback)
++        if(NULL == scp->sc_callback) {
++            scp = scp_next;
+             continue;
++        }
+ 
+         DEBUGMSGTL(("callback", "calling a callback for maj=%d min=%d\n",
+                     major, minor));
+@@ -363,6 +367,8 @@ snmp_call_callbacks(int major, int minor
+         (*(scp->sc_callback)) (major, minor, caller_arg,
+                                scp->sc_client_arg);
+         count++;
++
++        scp = scp_next;
+     }
+ 
+     DEBUGMSGTL(("callback",
