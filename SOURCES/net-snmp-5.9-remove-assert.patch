@@ -1,0 +1,23 @@
+From d8c83ff96144f0bb0945a3640ce7ac5995b91c74 Mon Sep 17 00:00:00 2001
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Thu, 26 Sep 2024 09:24:38 -0700
+Subject: [PATCH] libsnmp: Remove an incorrect assert statement
+
+See also https://github.com/net-snmp/net-snmp/issues/856.
+---
+ snmplib/snmpusm.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/snmplib/snmpusm.c b/snmplib/snmpusm.c
+index 704f3e25b9..c9363745b7 100644
+--- a/snmplib/snmpusm.c
++++ b/snmplib/snmpusm.c
+@@ -304,7 +304,6 @@ usm_clone(netsnmp_pdu *pdu, netsnmp_pdu *new_pdu)
+         return ret;
+ 
+     if (pdu->command == SNMP_MSG_TRAP2) {
+-        netsnmp_assert(pdu->securityModel == SNMP_DEFAULT_SECMODEL);
+         ret = usm_clone_usmStateReference(ref, new_ref);
+     } else {
+         netsnmp_assert(ref == *new_ref);
+

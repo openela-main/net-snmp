@@ -1,0 +1,79 @@
+diff -urNp old/man/net-snmp-config.1.def new/man/net-snmp-config.1.def
+--- old/man/net-snmp-config.1.def	2025-10-29 12:56:18.454081187 +0100
++++ new/man/net-snmp-config.1.def	2025-10-29 13:00:28.613546708 +0100
+@@ -29,8 +29,8 @@ code for a list of available debug token
+ .PP
+ SNMP Setup commands:
+ .TP
+-\fB\-\-create\-snmpv3\-user\fR [\-ro] [\-a authpass] [\-x privpass]
+-[\-X DES|AES] [\-A MD5|SHA|SHA-512|SHA-384|SHA-256|SHA-224] [username]
++\fB\-\-create\-snmpv3\-user\fR [\-ro] [\-A authpass] [\-X privpass]
++[\-x AES|AES128|AES192|AES256] [\-a MD5|SHA|SHA-512|SHA-384|SHA-256|SHA-224] [username]
+ .PP
+ These options produce the various compilation flags needed when
+ building external SNMP applications:
+diff -urNp old/man/net-snmp-create-v3-user.1.def new/man/net-snmp-create-v3-user.1.def
+--- old/man/net-snmp-create-v3-user.1.def	2025-10-29 12:56:18.456081167 +0100
++++ new/man/net-snmp-create-v3-user.1.def	2025-10-29 12:57:39.948255530 +0100
+@@ -3,7 +3,7 @@
+ net-snmp-create-v3-user \- create a SNMPv3 user in net-snmp configuration file
+ .SH SYNOPSIS
+ .PP
+-.B net-snmp-create-v3-user [-ro] [-A authpass] [-a MD5|SHA] [-X privpass] [-x DES|AES]
++.B net-snmp-create-v3-user [-ro] [-A authpass] [-a MD5|SHA|SHA-512|SHA-384|SHA-256|SHA-224] [-X privpass] [-x AES|AES128|AES192|AES256]
+ .B [username]
+ .SH DESCRIPTION
+ .PP
+@@ -21,11 +21,11 @@ creates a user with read-only permission
+ \fB\-A authpass\fR
+ specifies the authentication password
+ .TP
+-\fB\-a MD5|SHA\fR
++\fB\-a MD5|SHA|SHA-512|SHA-384|SHA-256|SHA-224\fR
+ specifies the authentication password hashing algorithm
+ .TP
+ \fB\-X privpass\fR
+ specifies the encryption password
+ .TP
+-\fB\-x DES|AES\fR
++\fB\-x AES|AES128|AES192|AES256\fR
+ specifies the encryption algorithm
+diff -urNp old/net-snmp-create-v3-user.in new/net-snmp-create-v3-user.in
+--- old/net-snmp-create-v3-user.in	2025-10-29 12:56:18.425081481 +0100
++++ new/net-snmp-create-v3-user.in	2025-10-29 12:59:41.821020779 +0100
+@@ -3,14 +3,14 @@
+ # this shell script is designed to add new SNMPv3 users
+ # to Net-SNMP config file.
+ 
+-if @PSCMD@ | egrep ' snmpd *$' > /dev/null 2>&1 ; then
+-    echo "Apparently at least one snmpd demon is already running."
++if @PSCMD@ | @EGREP@ ' snmpd *$' > /dev/null 2>&1 ; then
++    echo "Apparently at least one snmpd daemon is already running."
+     echo "You must stop them in order to use this command."
+     exit 1
+ fi
+ 
+ Aalgorithm="MD5"
+-Xalgorithm="DES"
++Xalgorithm="AES"
+ token=rwuser
+ 
+ while test "x$done" = "x" -a "x$1" != "x" -a "x$usage" != "xyes"; do
+@@ -40,7 +40,7 @@ case $1 in
+ 	    Aalgorithm=$1
+ 	    shift
+ 	    ;;
+-            md5|sha)
++            md5|sha|sha-512|sha-384|sha-256|sha-224)
+ 	    Aalgorithm=$(echo "$1" | tr a-z A-Z)
+ 	    shift
+ 	    ;;
+@@ -90,7 +90,7 @@ if test "x$usage" = "xyes"; then
+     echo ""
+     echo "Usage:"
+     echo "  net-snmp-create-v3-user [-ro] [-A authpass] [-X privpass]"
+-    echo "                          [-a MD5|SHA|SHA-512|SHA-384|SHA-256|SHA-224] [-x DES|AES] [username]"
++    echo "                          [-a MD5|SHA|SHA-512|SHA-384|SHA-256|SHA-224] [-x AES|AES128|AES192|AES256] [username]"
+     echo ""
+     exit
+ fi

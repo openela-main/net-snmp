@@ -10,7 +10,7 @@
 Summary:    A collection of SNMP protocol tools and libraries
 Name:       net-snmp
 Version:    5.9.1
-Release:    17%{?dist}.1
+Release:    21%{?dist}
 Epoch:      1
 
 License:    BSD
@@ -26,6 +26,7 @@ Source7:    net-snmp-tmpfs.conf
 Source8:    snmpd.service
 Source9:    snmptrapd.service
 Source10:   IETF-MIB-LICENSE.txt
+Source11:   net-snmp-tmpfilesd.conf
 
 Patch1:     net-snmp-5.9-pie.patch
 Patch2:     net-snmp-5.9-dir-fix.patch
@@ -60,8 +61,12 @@ Patch30:    net-snmp-5.9-rpmdb.patch
 Patch31:    net-snmp-5.9-CVE-2022-24805-24810.patch
 Patch32:    net-snmp-5.9.4-kernel-6.7.patch
 Patch33:    net-snmp-5.9-deleted-iface.patch
-Patch34:    net-snmp-5.9.4-oob-access.patch
-Patch35:    net-snmp-5.9.4-tls.patch
+Patch34:    net-snmp-5.9.4-revert-n-snmptrapd-log.patch
+Patch35:    net-snmp-5.8-callback-fix.patch
+Patch36:    net-snmp-5.9.1-create-user-usage.patch
+Patch37:    net-snmp-5.9-remove-assert.patch
+Patch38:    net-snmp-5.9.4-oob-access.patch
+Patch39:    net-snmp-5.9.4-tls.patch
 
 # Modern RPM API means at least EL6
 Patch101:   net-snmp-5.8-modern-rpm-api.patch
@@ -76,7 +81,7 @@ Requires:        %{name}-agent-libs%{?_isa} = %{epoch}:%{version}-%{release}
 # is not valid.  We can use %%post because this particular %%triggerun script
 # should fire just after this package is installed.
 %{?systemd_requires}
-BuildRequires: make
+BuildRequires:   make
 BuildRequires:   systemd
 BuildRequires:   gcc
 BuildRequires:   openssl-devel, bzip2-devel, elfutils-devel
@@ -103,6 +108,8 @@ BuildRequires:   perl(warnings)
 BuildRequires:   lm_sensors-devel >= 3
 %endif
 BuildRequires:   autoconf, automake
+# For _tmpfilesdir macro
+BuildRequires:   systemd-rpm-macros
 
 %description
 SNMP (Simple Network Management Protocol) is a protocol used for
@@ -247,8 +254,12 @@ cp %{SOURCE10} .
 %patch31 -p1 -b .CVE-2022-24805-24810
 %patch32 -p1 -b .kernel-6.7-fix
 %patch33 -p1 -b .iface
-%patch34 -p1 -b .oob-access
-%patch35 -p1 -b .tls
+%patch34 -p1 -b .revert-n-snmptrapd-log
+%patch35 -p1 -b .callback-fix
+%patch36 -p1 -b .create-user-usage
+%patch37 -p1 -b .remove-assert
+%patch38 -p1 -b .oob-access
+%patch39 -p1 -b .tls-allow
 
 %patch101 -p1 -b .modern-rpm-api
 %patch102 -p1
@@ -348,6 +359,7 @@ install -m 644 %SOURCE4 %{buildroot}%{_sysconfdir}/snmp/snmptrapd.conf
 install -d %{buildroot}%{_sysconfdir}/sysconfig
 install -m 644 %SOURCE5 %{buildroot}%{_sysconfdir}/sysconfig/snmpd
 install -m 644 %SOURCE6 %{buildroot}%{_sysconfdir}/sysconfig/snmptrapd
+install -p -D -m 644 %SOURCE11 %{buildroot}%{_tmpfilesdir}/%{name}.conf
 
 # prepare /var/lib/net-snmp
 install -d %{buildroot}%{_localstatedir}/lib/net-snmp
@@ -442,6 +454,7 @@ LD_LIBRARY_PATH=%{buildroot}/%{_libdir} make test
 %{_bindir}/snmpconf
 %{_bindir}/net-snmp-create-v3-user
 %{_sbindir}/*
+%{_tmpfilesdir}/%{name}.conf
 %attr(0644,root,root) %{_mandir}/man[58]/snmp*d*
 %attr(0644,root,root) %{_mandir}/man5/snmp_config.5.gz
 %attr(0644,root,root) %{_mandir}/man5/variables*
@@ -518,9 +531,21 @@ LD_LIBRARY_PATH=%{buildroot}/%{_libdir} make test
 %{_libdir}/libnetsnmptrapd*.so.%{soname}*
 
 %changelog
-* Tue Jan 13 2026 Josef Ridky <jridky@redhat.com> - 1:5.9.1-17.1
-- fix out of bound access issue (RHEL-137510)
+* Mon Feb 02 2026 Josef Ridky <jridky@redhat.com> - 1:5.9.1-21
+- fix creation of /var/lib/net-snmp in image mode (RHEL-132655)
+
+* Tue Jan 13 2026 Josef Ridky <jridky@redhat.com> - 1:5.9.1-20
+- fix out of bound access issue (RHEL-137511)
 - enable PQC (RHEL-132653)
+
+* Tue Nov 04 2025 Josef Ridky <jridky@redhat.com> - 1:5.9.1-19
+- remove wrong assert (RHEL-122095)
+
+* Wed Oct 22 2025 Josef Ridky <jridky@redhat.com> - 1:5.9.1-18
+- fix inverted usage of -n in snmptrapd (RHEL-101078)
+- fix use after free issue (RHEL-121091)
+- fix help and manpage for net-snmp-create-v3-user 
+  script(RHEL-101614 and RHEL-103557)
 
 * Tue Jul 16 2024 Josef Ridky <jridky@redhat.com> - 1:5.9.1-17
 - fix segfault with error on subcontainer (RHEL-46033)
